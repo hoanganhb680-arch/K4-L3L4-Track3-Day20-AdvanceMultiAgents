@@ -6,10 +6,14 @@ Chạy thật:   python -m lab.runner --condition baseline --tasks learn
 """
 import argparse
 import json
+import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 
+from langchain_core.callbacks import UsageMetadataCallbackHandler
 from langchain_core.messages import AIMessage, ToolMessage
 
+from .agent import build_agent
 from .grading import grade                                                      # có sẵn
 from .tasks import ROOT, get_task, hash_dir, list_tasks, prepare_sandbox         # có sẵn
 
@@ -19,7 +23,6 @@ CONDITIONS = {
     "subagents": {"mode": "subagents", "skills_dir": None},
     "skills-auto": {"mode": "single", "skills_dir": "skills/auto"},
 }
-
 
 def render_trace(messages) -> str:
     """CÓ SẴN, KHÔNG SỬA. Chuyển danh sách message của luồng chính thành Markdown (vết - trace).
@@ -45,7 +48,6 @@ def render_trace(messages) -> str:
             parts.append(f"### {m.type.capitalize()}\n{clean(m.content)}")
     return "\n\n".join(parts)
 
-
 def run_task(task_id: str, condition: str, results_dir="results", model=None, recursion_limit: int = 60) -> dict:
     """Chạy MỘT tác vụ dưới MỘT điều kiện, chấm điểm, ghi kết quả, và trả về bản ghi (record).
 
@@ -55,24 +57,112 @@ def run_task(task_id: str, condition: str, results_dir="results", model=None, re
       tokens {input, output, total}       - cộng dồn mọi lần gọi LLM, kể cả subagent (dùng UsageMetadataCallbackHandler)
       tool_calls                          - số tool call trong các AIMessage của luồng chính (không gồm việc bên trong subagent)
       subagent_calls                      - số tool call có tên "task" (giao việc cho subagent)
-      skills_read                         - số skill KHÁC NHAU đã được đọc: với mỗi tool call "read_file" có file_path chứa
-                                            "skills/", lấy tên thư mục ngay sau "skills/" rồi đếm các tên khác nhau
-                                            (đọc lại cùng một skill chỉ tính một lần)
+      skills_read                         - số skill KHÁC NHAU đã được đọc
       skills_modified (bool)              - thư mục skills trong sandbox bị đổi trong lúc chạy (so hash_dir trước/sau)
-      skills_sha256                       - hash_dir(sandbox/"skills") TRƯỚC khi chạy (để đối chiếu với skill đã đóng băng)
+      skills_sha256                       - hash_dir(sandbox/"skills") TRƯỚC khi chạy
       timestamp                           - thời điểm bắt đầu, UTC, dạng ISO-8601
       seconds, final_message, error (None nếu không lỗi)
     Lỗi khi chạy tác tử KHÔNG được làm chương trình dừng: ghi vào `error` và vẫn chấm điểm.
     Sandbox là thư mục tạm NGOÀI kho mã nguồn và phải được xóa sau khi chạy.
     """
-    raise NotImplementedError("TODO 1: cài đặt run_task (xem guides/pseudocode/03_runner.md)")
+    cfg = CONDITIONS[condition]
+    task = get_task(task_id)
+    skills_dir = ROOT / cfg["skills_dir"] if cfg["skills_dir"] else None
 
+    out = Path(results_dir) / condition / task_id
+    out.mkdir(parents=True, exist_ok=True)
+
+    record = {
+        "task": task_id,
+        "condition": condition,
+        "role": task.role,
+        "error": None,
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
+    }
+
+    sandbox = Path(tempfile.mkdtemp(prefix="lab-sandbox-"))
+    try:
+        prepare_sandbox(task, sandbox, skills_dir)
+        before_hash = hash_dir(sandbox / "skills")
+        record["skills_sha256"] = before_hash
+
+        agent = build_agent(sandbox, mode=cfg["mode"], use_skills=(skills_dir is not None), model=model)
+        usage = UsageMetadataCallbackHandler()
+
+        start = datetime.now(timezone.utc)
+        messages = []
+        final = ""
+        last_state = None
+        try:
+            for state in agent.stream(
+                {"messages": [{"role": "user", "content": task.instruction}]},
+                config={"callbacks": [usage], "recursion_limit": recursion_limit},
+                stream_mode="values",
+            ):
+                last_state = state
+        except Exception as exc:  # noqa: BLE001
+            record["error"] = f"{type(exc).__name__}: {exc}"
+        if last_state:
+            messages = last_state.get("messages", [])
+            if messages:
+                content = messages[-1].content
+                if isinstance(content, list):
+                    content = "".join(
+                        part.get("text", "") if isinstance(part, dict) else str(part) for part in content
+                    )
+                final = str(content or "")
+
+        record["seconds"] = round((datetime.now(timezone.utc) - start).total_seconds(), 1)
+
+        input_tokens = 0
+        output_tokens = 0
+        total_tokens = 0
+        for meta in usage.usage_metadata.values():
+            input_tokens += meta.get("input_tokens", 0)
+            output_tokens += meta.get("output_tokens", 0)
+            total_tokens += meta.get("total_tokens", 0)
+        record["tokens"] = {"input": input_tokens, "output": output_tokens, "total": total_tokens}
+
+        tool_calls = []
+        for m in messages:
+            if isinstance(m, AIMessage):
+                for tc in m.tool_calls:
+                    name = tc.get("name") if isinstance(tc, dict) else getattr(tc, "name", "")
+                    args = tc.get("args") if isinstance(tc, dict) else getattr(tc, "args", {})
+                    tool_calls.append((name, args))
+        record["tool_calls"] = len(tool_calls)
+        record["subagent_calls"] = sum(1 for n, _ in tool_calls if n == "task")
+
+        skills_read = set()
+        for n, args in tool_calls:
+            if n == "read_file":
+                fp = str(args.get("file_path", ""))
+                if "skills/" in fp:
+                    rest = fp.split("skills/", 1)[1]
+                    name = rest.lstrip("/").split("/", 1)[0]
+                    if name:
+                        skills_read.add(name)
+        record["skills_read"] = len(skills_read)
+
+        record["skills_modified"] = hash_dir(sandbox / "skills") != before_hash
+        record["final_message"] = final
+
+        g = grade(task, sandbox / "workspace")
+        record["score"] = g["score"]
+        record["passed"] = g["passed"]
+        record["total"] = g["total"]
+        record["checks"] = g["checks"]
+
+        (out / "trace.md").write_text(render_trace(messages), encoding="utf-8")
+    finally:
+        import shutil
+        shutil.rmtree(sandbox, ignore_errors=True)
+
+    (out / "run.json").write_text(json.dumps(record, indent=2, ensure_ascii=False), encoding="utf-8")
+    return record
 
 def main(argv=None):
-    """CÓ SẴN, KHÔNG SỬA. Giao diện dòng lệnh (CLI): --condition, --tasks (id... | all | learn | eval), --results, --recursion-limit.
-
-    In mỗi lần chạy một dòng: điều kiện, id, passed/total, token, số tool call, số giây, lỗi (nếu có).
-    """
+    """CÓ SẴN, KHÔNG SỬA. Giao diện dòng lệnh (CLI)."""
     ap = argparse.ArgumentParser(description="Run tasks under one condition.")
     ap.add_argument("--condition", required=True, choices=sorted(CONDITIONS))
     ap.add_argument("--tasks", nargs="+", default=["all"], help="task ids, or 'all', 'learn', 'eval'")
@@ -93,7 +183,6 @@ def main(argv=None):
             continue
         print(f"{args.condition:13s} {tid:11s} score={r['passed']}/{r['total']} tokens={r['tokens']['total']} "
               f"calls={r['tool_calls']} {r['seconds']}s" + (f" ERROR={r['error']}" if r["error"] else ""), flush=True)
-
 
 if __name__ == "__main__":
     main()
