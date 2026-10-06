@@ -1,0 +1,6 @@
+# Force LF on files whose byte content is hashed (skills) or that must reproduce exactly.
+# Prevents a Windows CRLF checkout from changing the skills_sha256 / diff-vs-freeze.
+skills/** text eol=lf
+results/** text eol=lf
+*.md text eol=lf
+*.py text eol=lf
