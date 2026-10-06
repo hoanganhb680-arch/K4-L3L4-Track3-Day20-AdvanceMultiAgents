@@ -4,7 +4,7 @@
 
 | Họ tên | Mã sinh viên | Phần đóng góp |
 |---|---|---|
-| (nhóm demo) | - | Toàn bộ |
+| Bùi Hoàng Anh | 2A2020602697 | Toàn bộ (làm cá nhân) |
 
 - Mô hình: `wdb/deepseek-ai/DeepSeek-V4-Pro-0813` qua endpoint nội bộ `http://127.0.0.1:20128/v1`.
 - `LAB_TEMPERATURE=0`, `recursion_limit=60`.
