@@ -1,0 +1,64 @@
+{
+  "task": "data-learn",
+  "condition": "skills-auto",
+  "role": "learn",
+  "error": "GraphRecursionError: Recursion limit of 60 reached without hitting a stop condition. You can increase the limit by setting the `recursion_limit` config key.\nFor troubleshooting, visit: https://docs.langchain.com/oss/python/langgraph/errors/GRAPH_RECURSION_LIMIT",
+  "timestamp": "2026-10-06T12:41:26.105Z",
+  "skills_sha256": "9bcdfee89308d456cbc83399ad5658eedadc0aa633ef29f3017f7ba7b4958989",
+  "seconds": 166.7,
+  "tokens": {
+    "input": 500880,
+    "output": 15455,
+    "total": 516335
+  },
+  "tool_calls": 55,
+  "subagent_calls": 0,
+  "skills_read": 3,
+  "skills_modified": false,
+  "final_message": "{\n  \"north_q1_revenue\": 313024,\n  \"north_q1_orders\": 10,\n  \"top_region\": \"North\",\n  \"missing_amount_orders\": 8,\n  \"duplicate_rows_removed\": 7,\n  \"meta\": {\n    \"source\": \"sales.csv\",\n    \"rows_in\": 101,\n    \"rows_used\": 86\n  }\n}\n\n[Command succeeded with exit code 0]",
+  "score": 1.0,
+  "passed": 8,
+  "total": 8,
+  "checks": [
+    {
+      "name": "north_q1_revenue",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "north_q1_orders",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "top_region",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "missing_amount_orders",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "duplicate_rows_removed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "rule_money_in_cents",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "rule_meta_block",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "rule_clean_csv",
+      "passed": true,
+      "detail": ""
+    }
+  ]
+}

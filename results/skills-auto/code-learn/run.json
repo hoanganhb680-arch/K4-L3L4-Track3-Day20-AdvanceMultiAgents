@@ -1,0 +1,74 @@
+{
+  "task": "code-learn",
+  "condition": "skills-auto",
+  "role": "learn",
+  "error": "GraphRecursionError: Recursion limit of 60 reached without hitting a stop condition. You can increase the limit by setting the `recursion_limit` config key.\nFor troubleshooting, visit: https://docs.langchain.com/oss/python/langgraph/errors/GRAPH_RECURSION_LIMIT",
+  "timestamp": "2026-10-06T12:32:56.372Z",
+  "skills_sha256": "9bcdfee89308d456cbc83399ad5658eedadc0aa633ef29f3017f7ba7b4958989",
+  "seconds": 353.7,
+  "tokens": {
+    "input": 333992,
+    "output": 38114,
+    "total": 372106
+  },
+  "tool_calls": 56,
+  "subagent_calls": 0,
+  "skills_read": 3,
+  "skills_modified": false,
+  "final_message": "\"\"\"Regression tests for the inventory package fixes.\"\"\"$\nfrom decimal import Decimal$\n$\nfrom inventory.export import to_csv_row$\nfrom inventory.pricing import apply_discount, parse_price$\nfrom inventory.report import low_stock, total_value$\n$\n$\ndef test_parse_price_thousands_separator():$\n    assert parse_price(\"$1,299.50\") == Decimal(\"1299.50\")$\n$\n$\ndef test_parse_price_accounting_parentheses():$\n    assert parse_price(\"(12.00)\") == Decimal(\"-12.00\")$\n$\n$\ndef test_apply_discount_round_half_up():$\n    assert apply_discount(Decimal(\"10.05\"), 10) == Decimal(\"9.05\")$\n$\n$\ndef test_low_stock_sorted_ignoring_case():$\n    items = [$\n        {\"name\": \"banana\", \"qty\": 1},$\n        {\"name\": \"Apple\", \"qty\": 2},$\n        {\"name\": \"cherry\", \"qty\": 9},$\n    ]$\n    assert low_stock(items) == [\"Apple\", \"banana\"]$\n$\n$\ndef test_csv_row_quotes_and_commas():$\n    assert to_csv_row({\"name\": 'a\"b,c', \"price\": \"2.5\", \"qty\": 4}) == '\"a\"\"b,c\",2.50,4'$\n\n[Command succeeded with exit code 0]",
+  "score": 0.8,
+  "passed": 8,
+  "total": 10,
+  "checks": [
+    {
+      "name": "visible_suite_passes",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "tests_not_modified",
+      "passed": false,
+      "detail": "the original files in tests/ must not be modified (new test files are allowed)"
+    },
+    {
+      "name": "parse_price_all_formats",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "other_caller_fixed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "discount_rounds_half_up",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "low_stock_follows_docstring",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "csv_quoting_follows_docstring",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "rule_type_hints",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "rule_regression_tests",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "rule_changelog",
+      "passed": false,
+      "detail": "RULE: record each fix in CHANGELOG.md under the heading '## Unreleased' as a bullet '- fix(<function name>): <short description>' (at least 3 bullets)."
+    }
+  ]
+}

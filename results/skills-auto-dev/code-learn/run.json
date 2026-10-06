@@ -2,22 +2,22 @@
   "task": "code-learn",
   "condition": "skills-auto",
   "role": "learn",
-  "error": "GraphRecursionError: Recursion limit of 45 reached without hitting a stop condition. You can increase the limit by setting the `recursion_limit` config key.\nFor troubleshooting, visit: https://docs.langchain.com/oss/python/langgraph/errors/GRAPH_RECURSION_LIMIT",
-  "timestamp": "2026-10-06T09:54:55.411Z",
-  "skills_sha256": "9bcdfee89308d456cbc83399ad5658eedadc0aa633ef29f3017f7ba7b4958989",
-  "seconds": 86.8,
+  "error": null,
+  "timestamp": "2026-10-06T13:26:29.479Z",
+  "skills_sha256": "e7646d876118a686bedad8d04916772196b7fc6afa94544afd646fd2f602b1d7",
+  "seconds": 576.1,
   "tokens": {
-    "input": 123434,
-    "output": 2089,
-    "total": 125523
+    "input": 239470,
+    "output": 34605,
+    "total": 274075
   },
-  "tool_calls": 22,
+  "tool_calls": 48,
   "subagent_calls": 0,
   "skills_read": 3,
   "skills_modified": false,
-  "final_message": "",
-  "score": 0.5,
-  "passed": 5,
+  "final_message": "All checks pass. Here's a summary of what I changed and why.\n\n## Changes\n\n### `workspace/inventory/pricing.py`\n- **`parse_price`**: now strips thousands separators (`,`) and handles accounting-style parentheses `(12.00)` → `-12.00`, in addition to the existing `$` and whitespace handling. This fixes the `\"$1,299.50\"` failure and matches the docstring.\n- **`apply_discount`**: now uses `ROUND_HALF_UP` instead of the default banker's rounding, so `10.05` with 10% discount correctly becomes `9.05` (not `9.04`). Also accepts `int | float | Decimal` percentages safely.\n- Added type annotations and kept docstrings.\n\n### `workspace/inventory/report.py`\n- **`low_stock`**: changed `<=` to strict `<` (docstring says \"strictly below\") and added case-insensitive alphabetical sorting via `key=str.lower`.\n- Added type annotations and clarified the `total_value` docstring.\n\n### `workspace/inventory/export.py`\n- **`to_csv_row`**: implemented the RFC 4180 quoting described in its docstring — names containing a comma or double quote are wrapped in double quotes, and internal double quotes are doubled.\n- Added type annotations.\n\n### `workspace/inventory/__init__.py`\n- Added `TypedDict` definitions (`Item`, `StockItem`) to support the type annotations in the other modules.\n\n### `workspace/CHANGELOG.md`\n- Added bulleted entries for each fix, per the code-standards skill.\n\n### `workspace/tests/test_regressions.py` (new)\n- Added regression tests covering the fixed behaviors and edge cases (parentheses, thousands separators, half-up rounding, strict threshold, case-insensitive sorting, CSV quoting/escaping).\n\n## Verification\n- `python -m pytest tests -q` → **13 passed**\n- `python -m compileall -q inventory tests` → success\n- No existing files in `tests/` were modified.",
+  "score": 0.8,
+  "passed": 8,
   "total": 10,
   "checks": [
     {
@@ -47,8 +47,8 @@
     },
     {
       "name": "low_stock_follows_docstring",
-      "passed": false,
-      "detail": "low_stock returned ['b', 'A', 'c']"
+      "passed": true,
+      "detail": ""
     },
     {
       "name": "csv_quoting_follows_docstring",
@@ -57,13 +57,13 @@
     },
     {
       "name": "rule_type_hints",
-      "passed": false,
-      "detail": "RULE: every public function (name not starting with '_') in the package has type annotations on all parameters and on the return value."
+      "passed": true,
+      "detail": ""
     },
     {
       "name": "rule_regression_tests",
-      "passed": false,
-      "detail": "RULE: add tests/test_regressions.py with one test function per bug you fixed (at least 3); the file must pass."
+      "passed": true,
+      "detail": ""
     },
     {
       "name": "rule_changelog",

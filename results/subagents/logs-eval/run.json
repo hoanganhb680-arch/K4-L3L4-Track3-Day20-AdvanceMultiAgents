@@ -1,0 +1,74 @@
+{
+  "task": "logs-eval",
+  "condition": "subagents",
+  "role": "eval",
+  "error": null,
+  "timestamp": "2026-10-06T12:28:40.053Z",
+  "skills_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "seconds": 72.4,
+  "tokens": {
+    "input": 186112,
+    "output": 6501,
+    "total": 192613
+  },
+  "tool_calls": 20,
+  "subagent_calls": 0,
+  "skills_read": 0,
+  "skills_modified": false,
+  "final_message": "Parsed `workspace/worker.log` and wrote `workspace/errors.json`.\n\nHow I parsed it:\n- Matched each entry header `[<date> <time> <offset>] <service> | <LEVEL> | <message>`.\n- Converted each timestamp to UTC using its `+HHMM`/`-HHMM` offset and formatted it as `YYYY-MM-DDTHH:MM:SSZ`.\n- Kept only entries whose level (case-insensitive) is `ERROR`, `SEVERE`, or `FATAL`, and uppercased the level.\n- Took `message` as the text after the last ` | ` on the header line.\n- Skipped indented continuation lines (payload dumps) and summed any following `-- last message repeated N times --` lines into `repeat_count` as `1 + N`.\n- Aggregated `counts_by_service` as the sum of `repeat_count` per service.\n\nResult: 24 error entries, with `counts_by_service` = `{\"queue-worker\": 23, \"mailer\": 8, \"scheduler\": 21}`.",
+  "score": 0.6,
+  "passed": 6,
+  "total": 10,
+  "checks": [
+    {
+      "name": "valid_structure",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "entry_count",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "timestamps_utc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "levels_uppercase",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "repeat_counts",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "counts_by_service",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "rule_service_names",
+      "passed": false,
+      "detail": ""
+    },
+    {
+      "name": "rule_sorted_errors",
+      "passed": false,
+      "detail": ""
+    },
+    {
+      "name": "rule_schema_header",
+      "passed": false,
+      "detail": ""
+    },
+    {
+      "name": "rule_source_line",
+      "passed": false,
+      "detail": ""
+    }
+  ]
+}

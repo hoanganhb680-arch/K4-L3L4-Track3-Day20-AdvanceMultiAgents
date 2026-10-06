@@ -1,0 +1,69 @@
+{
+  "task": "logs-learn",
+  "condition": "skills-auto",
+  "role": "learn",
+  "error": null,
+  "timestamp": "2026-10-06T12:49:02.734Z",
+  "skills_sha256": "9bcdfee89308d456cbc83399ad5658eedadc0aa633ef29f3017f7ba7b4958989",
+  "seconds": 252.7,
+  "tokens": {
+    "input": 505746,
+    "output": 58717,
+    "total": 564463
+  },
+  "tool_calls": 38,
+  "subagent_calls": 0,
+  "skills_read": 3,
+  "skills_modified": false,
+  "final_message": "I parsed `workspace/app.log` and wrote `workspace/errors.json`.\n\nHow I parsed it:\n- Read the format from `workspace/README.md`: each entry is `<timestamp> [<LEVEL>] <service>: <message>`, optionally followed by traceback lines, and `-- last message repeated N times --` applies to the entry above it.\n- Split the log into entries, attaching traceback lines to their preceding entry and adding `N` to that entry's `repeat_count`.\n- Kept only entries whose level (case-insensitive) is `ERROR` or `CRITICAL`.\n- Converted each timestamp to UTC (`Z`/`+07:00`/`-05:00`) and formatted it as `YYYY-MM-DDTHH:MM:SSZ`.\n- Set `level` to upper case, `message` to the text after `<service>: `, and `exception` to the last traceback line (or `null`).\n- Computed `repeat_count` as `1 + sum(N)` from following repeat lines, and `counts_by_service` as the per-service sum of `repeat_count`.\n- Sorted errors chronologically and sorted the `counts_by_service` keys, then wrote valid JSON.\n\nResult: 25 error/critical entries, with `counts_by_service` = `{\"auth-service\": 8, \"inventory-service\": 13, \"payment-service\": 8}`.",
+  "score": 0.6666666666666666,
+  "passed": 6,
+  "total": 9,
+  "checks": [
+    {
+      "name": "valid_structure",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "entry_count",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "timestamps_utc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "exception_fields",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "repeat_counts",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "counts_by_service",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "rule_service_names",
+      "passed": false,
+      "detail": "RULE: service names in the output are lower-case with '-' replaced by '_' (payment-service -> payment_service)."
+    },
+    {
+      "name": "rule_sorted_errors",
+      "passed": false,
+      "detail": "RULE: `errors` is sorted by service, then by timestamp_utc, ascending."
+    },
+    {
+      "name": "rule_schema_header",
+      "passed": false,
+      "detail": "RULE: the top-level object has \"schema_version\": 2 and \"generated_by\": \"log-triage\"."
+    }
+  ]
+}
